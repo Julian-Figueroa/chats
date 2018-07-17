@@ -219,10 +219,10 @@ app.post('/login', (req, res) => {
     }
 });
 
-// Update the User NAme and Last Name
+// UPDATE THE USER NAME AND LAST NAME
 app.put('/user', (req, res) => {
     const { name, lastName, id } = req.body;
-  //console.log('Params: ', id, name, lastName);
+    //console.log('Params: ', id, name, lastName);
 
     if (id && name && lastName) {
         const sql = mysql.format('UPDATE usuarios SET nombre = ?, apellido = ? WHERE idUsuario = ?', [name, lastName, id]);
@@ -244,6 +244,73 @@ app.put('/user', (req, res) => {
             });
         });
     }
+});
+
+// DELETE THE USER 
+app.delete('/user', (req, res) => {
+    const { id, role } = req.body;
+    console.log('Params: ', id, role);
+
+    if (id && role) {
+        if (role === 'user') {
+
+            const sql = mysql.format('DELETE FROM usuarios WHERE idUsuario = ?', [id]);
+            const connection = mysql.createConnection({
+                host: 'localhost',
+                user: 'root',
+                database: 'chats'
+            });
+
+            connection.query(sql, (err, results, fields) => {
+                if (err) {
+                    console.log('The user Id is wrong, please check it', err);
+                    res.sendStatus(500);
+                    return;
+                }
+
+                res.json({
+                    Message: 'The User was deleted !!!'
+                });
+            });
+        } else {
+            res.json({
+                message: 'Can not be possible delete an admin user'
+            });
+        }
+    }
+});
+
+// GET ALL USERS
+app.get('/users', (req, res) => {
+    const queryString = 'SELECT * FROM usuarios where rol = ?';
+
+    const connection = mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        database: 'chats'
+    });
+
+    const role = 'user'
+
+    connection.query(queryString, [role], (err, rows, fields) => {
+        if (err) {
+            console.log('There was an error fetching the data ', err);
+            res.sendStatus(500);
+            return;
+        }
+        console.log('Fetch Data ');
+
+        const users = rows.map((row) => {
+            return {
+                name: row.nombre,
+                lastName: row.apellido,
+                email: row.correo,
+                date: row.fechaIngreso
+            }
+        });
+
+        res.json(users);
+    });
 });
 
 app.listen(3030, () => {
