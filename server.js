@@ -14,6 +14,7 @@ app.use(bodyParser.urlencoded({
 
 app.use(bodyParser.json());
 
+// GET RISK BY ID
 app.get('/risk/:id', (req, res) => {
     const riskId = req.params.id;
     // console.log('Id: ', riskId);
@@ -44,6 +45,7 @@ app.get('/risk/:id', (req, res) => {
 
 });
 
+// CREATE A NEW RISK ROW
 app.post('/risk', (req, res) => {
     const riskName = req.body.riskName;
     console.log('riskName: ', riskName);
@@ -78,11 +80,13 @@ app.post('/risk', (req, res) => {
 
 });
 
+// HEALTH CHECK ENDPOINT
 app.get('/', (req, res) => {
     console.log('Root path');
     res.send('Hello From Path');
 });
 
+// GET ALL THE RISKS
 app.get('/risks', (req, res) => {
     const queryString = 'SELECT * FROM riesgos';
 
@@ -110,6 +114,7 @@ app.get('/risks', (req, res) => {
     });
 });
 
+// REGISTER A NEW USER
 app.post('/register', async (req, res) => {
     const { name, lastName, password, email } = req.body;
 
@@ -127,7 +132,8 @@ app.post('/register', async (req, res) => {
                     apellido: lastName,
                     password: hash,
                     correo: email,
-                    fechaIngreso: created
+                    fechaIngreso: created,
+                    rol: 'user'
                 };
                 const connection = mysql.createConnection({
                     host: 'localhost',
@@ -164,6 +170,7 @@ app.post('/register', async (req, res) => {
 
 });
 
+// LOGIN THE CREATED USER
 app.post('/login', (req, res) => {
     const { password, email } = req.body;
     // console.log('Login: ', password, email);
@@ -183,6 +190,8 @@ app.post('/login', (req, res) => {
             }
 
             const pass2 = rows[0].password;
+            const idUser = rows[0].idUsuario;
+            const user = rows[0];
 
             bcrypt.compare(password, pass2, (err, result) => {
                 if (err) {
@@ -194,9 +203,10 @@ app.post('/login', (req, res) => {
                     return;
                 }
                 else if (result === true) {
-                    
+                    // Missing the update of the date
                     res.json({
-                        Message: 'The User is Authenticated !!!'
+                        Message: 'The User is Authenticated !!!',
+                        User: user
                     });
                 } else {
                     res.json({
@@ -209,16 +219,31 @@ app.post('/login', (req, res) => {
     }
 });
 
-app.get('/users', (req, res) => {
-    const user1 = {
-        firstName: 'Michael Jordan'
-    };
-    const user2 = {
-        firstName: 'Michael Platini'
-    };
-    console.log('Root path');
+// Update the User NAme and Last Name
+app.put('/user', (req, res) => {
+    const { name, lastName, id } = req.body;
+  //console.log('Params: ', id, name, lastName);
 
-    res.json([user1, user2]);
+    if (id && name && lastName) {
+        const sql = mysql.format('UPDATE usuarios SET nombre = ?, apellido = ? WHERE idUsuario = ?', [name, lastName, id]);
+        const connection = mysql.createConnection({
+            host: 'localhost',
+            user: 'root',
+            database: 'chats'
+        });
+
+        connection.query(sql, (err, results, fields) => {
+            if (err) {
+                console.log('The user Id is wrong, please check it', err);
+                res.sendStatus(500);
+                return;
+            }
+
+            res.json({
+                Message: 'The User was Updated !!!'
+            });
+        });
+    }
 });
 
 app.listen(3030, () => {
